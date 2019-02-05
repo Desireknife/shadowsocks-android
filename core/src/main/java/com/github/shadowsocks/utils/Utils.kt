@@ -39,11 +39,18 @@ import com.crashlytics.android.Crashlytics
 import java.net.InetAddress
 import java.net.URLConnection
 
+private val parseNumericAddress by lazy {
+    InetAddress::class.java.getDeclaredMethod("parseNumericAddress", String::class.java).apply {
+        isAccessible = true
+    }
+}
 /**
  * A slightly more performant variant of InetAddress.parseNumericAddress.
+ *
+ * Bug: https://issuetracker.google.com/issues/123456213
  */
-fun String?.parseNumericAddress(): InetAddress? =
-        Os.inet_pton(OsConstants.AF_INET, this) ?: Os.inet_pton(OsConstants.AF_INET6, this)
+fun String?.parseNumericAddress(): InetAddress? = Os.inet_pton(OsConstants.AF_INET, this)
+        ?: Os.inet_pton(OsConstants.AF_INET6, this)?.let { parseNumericAddress.invoke(null, this) as InetAddress }
 
 fun parsePort(str: String?, default: Int, min: Int = 1025): Int {
     val value = str?.toIntOrNull() ?: default
@@ -52,17 +59,6 @@ fun parsePort(str: String?, default: Int, min: Int = 1025): Int {
 
 fun broadcastReceiver(callback: (Context, Intent) -> Unit): BroadcastReceiver = object : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) = callback(context, intent)
-}
-
-/**
- * Wrapper for kotlin.concurrent.thread that tracks uncaught exceptions.
- */
-fun thread(name: String? = null, start: Boolean = true, isDaemon: Boolean = false,
-           contextClassLoader: ClassLoader? = null, priority: Int = -1, block: () -> Unit): Thread {
-    val thread = kotlin.concurrent.thread(false, isDaemon, contextClassLoader, name, priority, block)
-    thread.setUncaughtExceptionHandler { _, t -> printLog(t) }
-    if (start) thread.start()
-    return thread
 }
 
 val URLConnection.responseLength: Long

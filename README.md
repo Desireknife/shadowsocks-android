@@ -8,9 +8,9 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-orange.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 <a href="https://play.google.com/store/apps/details?id=com.github.shadowsocks"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="48"></a>
-for Android & Chrome OS  
+for Android & Chrome OS ([beta](https://play.google.com/apps/testing/com.github.shadowsocks))  
 <a href="https://play.google.com/store/apps/details?id=com.github.shadowsocks.tv"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="48"></a>
-for Android TV
+for Android TV ([beta](https://play.google.com/apps/testing/com.github.shadowsocks.tv))
 
 
 ### PREREQUISITES
@@ -32,7 +32,7 @@ You can check whether the latest commit builds under UNIX environment by checkin
 ```bash
 mkdir build
 sudo chown 3434:3434 build
-docker run --rm -v ${PWD}/build:/build shadowsocks/shadowsocks-android:circleci bash -c "cd /build; git clone https://github.com/shadowsocks/shadowsocks-android; cd shadowsocks-android; git submodule update --init --recursive; ./gradlew assembleDebug"
+docker run --rm -v ${PWD}/build:/build shadowsocks/android-ndk-go bash -c "cd /build; git clone https://github.com/shadowsocks/shadowsocks-android; cd shadowsocks-android; git submodule update --init --recursive; ./gradlew assembleDebug"
 ```
 
 ### [TRANSLATE](https://discourse.shadowsocks.org/t/poeditor-translation-main-thread/30)

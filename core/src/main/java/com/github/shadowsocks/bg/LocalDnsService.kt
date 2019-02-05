@@ -32,8 +32,8 @@ import org.json.JSONObject
 
 object LocalDnsService {
     interface Interface : BaseService.Interface {
-        override fun startNativeProcesses() {
-            super.startNativeProcesses()
+        override suspend fun startProcesses() {
+            super.startProcesses()
             val data = data
             val profile = data.proxy!!.profile
 
@@ -69,7 +69,7 @@ object LocalDnsService {
                         Acl.BYPASS_CHN, Acl.BYPASS_LAN_CHN, Acl.GFWLIST, Acl.CUSTOM_RULES -> {
                             put("PrimaryDNS", localDns)
                             put("AlternativeDNS", remoteDns)
-                            put("IPNetworkFile", JSONObject(mapOf("Alternative" to "china_ip_list.txt")))
+                            put("IPNetworkFile", JSONObject(mapOf("Primary" to "china_ip_list.txt")))
                             put("AclFile", "domain_exceptions.acl")
                         }
                         Acl.CHINALIST -> {
@@ -86,7 +86,7 @@ object LocalDnsService {
                 })
             }
 
-            if (!profile.udpdns) data.processes.start(buildAdditionalArguments(arrayListOf(
+            if (!profile.udpdns) data.processes!!.start(buildAdditionalArguments(arrayListOf(
                     File(app.applicationInfo.nativeLibraryDir, Executable.OVERTURE).absolutePath,
                     "-c", buildOvertureConfig("overture.conf"))))
         }

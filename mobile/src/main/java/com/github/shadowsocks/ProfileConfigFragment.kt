@@ -150,7 +150,7 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
         DataStore.dirty = true
         true
     } catch (exc: RuntimeException) {
-        (activity as MainActivity).snackbar(exc.localizedMessage).show()
+        Snackbar.make(view!!, exc.localizedMessage, Snackbar.LENGTH_LONG).show()
         false
     }
 
@@ -179,7 +179,7 @@ class ProfileConfigFragment : PreferenceFragmentCompat(),
         } else super.onActivityResult(requestCode, resultCode, data)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?) = when (item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
         R.id.action_delete -> {
             val activity = requireActivity()
             AlertDialog.Builder(activity)

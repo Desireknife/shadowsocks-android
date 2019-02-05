@@ -1,7 +1,7 @@
 /*******************************************************************************
  *                                                                             *
- *  Copyright (C) 2018 by Max Lv <max.c.lv@gmail.com>                          *
- *  Copyright (C) 2018 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
+ *  Copyright (C) 2019 by Max Lv <max.c.lv@gmail.com>                          *
+ *  Copyright (C) 2019 by Mygod Studio <contact-shadowsocks-android@mygod.be>  *
  *                                                                             *
  *  This program is free software: you can redistribute it and/or modify       *
  *  it under the terms of the GNU General Public License as published by       *
@@ -18,25 +18,25 @@
  *                                                                             *
  *******************************************************************************/
 
-package com.github.shadowsocks.bg
+package com.github.shadowsocks.net
 
-import android.util.Log
-import androidx.core.os.bundleOf
-import com.github.shadowsocks.Core
-import com.github.shadowsocks.core.R
-import com.google.firebase.remoteconfig.FirebaseRemoteConfig
-import java.net.URL
+import android.net.LocalSocket
+import com.github.shadowsocks.utils.printLog
+import kotlinx.coroutines.*
+import java.io.File
 
-object RemoteConfig {
-    private val config = FirebaseRemoteConfig.getInstance().apply { setDefaults(R.xml.default_configs) }
+abstract class ConcurrentLocalSocketListener(name: String, socketFile: File) : LocalSocketListener(name, socketFile),
+        CoroutineScope {
+    private val job = SupervisorJob()
+    override val coroutineContext get() = Dispatchers.IO + job + CoroutineExceptionHandler { _, t -> printLog(t) }
 
-    val proxyUrl get() = URL(config.getString("proxy_url"))
+    override fun accept(socket: LocalSocket) {
+        launch { super.accept(socket) }
+    }
 
-    fun fetch() = config.fetch().addOnCompleteListener {
-        if (it.isSuccessful) config.activateFetched() else {
-            val e = it.exception ?: return@addOnCompleteListener
-            Log.w("RemoteConfig", e)
-            Core.analytics.logEvent("femote_config_failure", bundleOf(Pair(e.javaClass.simpleName, e.message)))
-        }
+    suspend fun shutdown() {
+        job.cancel()
+        close()
+        job.join()
     }
 }

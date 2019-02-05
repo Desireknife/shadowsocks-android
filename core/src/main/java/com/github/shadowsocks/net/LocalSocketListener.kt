@@ -18,51 +18,51 @@
  *                                                                             *
  *******************************************************************************/
 
-package com.github.shadowsocks.bg
+package com.github.shadowsocks.net
 
 import android.net.LocalServerSocket
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
 import com.github.shadowsocks.utils.printLog
 import java.io.File
 import java.io.IOException
 
-abstract class LocalSocketListener(protected val tag: String) : Thread(tag) {
-    init {
-        setUncaughtExceptionHandler { _, t -> printLog(t) }
+abstract class LocalSocketListener(name: String, socketFile: File) : Thread(name), AutoCloseable {
+    private val localSocket = LocalSocket().apply {
+        socketFile.delete() // It's a must-have to close and reuse previous local socket.
+        bind(LocalSocketAddress(socketFile.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
     }
-
-    protected abstract val socketFile: File
+    private val serverSocket = LocalServerSocket(localSocket.fileDescriptor)
     @Volatile
     private var running = true
 
     /**
      * Inherited class do not need to close input/output streams as they will be closed automatically.
      */
-    protected abstract fun accept(socket: LocalSocket)
-    final override fun run() {
-        socketFile.delete() // It's a must-have to close and reuse previous local socket.
-        LocalSocket().use { localSocket ->
-            val serverSocket = try {
-                localSocket.bind(LocalSocketAddress(socketFile.absolutePath, LocalSocketAddress.Namespace.FILESYSTEM))
-                LocalServerSocket(localSocket.fileDescriptor)
+    protected open fun accept(socket: LocalSocket) = socket.use { acceptInternal(socket) }
+    protected abstract fun acceptInternal(socket: LocalSocket)
+    final override fun run() = localSocket.use {
+        while (running) {
+            try {
+                accept(serverSocket.accept())
             } catch (e: IOException) {
-                printLog(e)
-                return
-            }
-            while (running) {
-                try {
-                    serverSocket.accept()
-                } catch (e: IOException) {
-                    printLog(e)
-                    continue
-                }?.use(this::accept)
+                if (running) printLog(e)
+                continue
             }
         }
     }
 
-    fun stopThread() {
+    override fun close() {
         running = false
-        interrupt()
+        // see also: https://issuetracker.google.com/issues/36945762#comment15
+        try {
+            Os.shutdown(localSocket.fileDescriptor, OsConstants.SHUT_RDWR)
+        } catch (e: ErrnoException) {
+            if (e.errno != OsConstants.EBADF) throw e   // suppress fd already closed
+        }
+        join()
     }
 }

@@ -47,7 +47,7 @@ class TransproxyService : Service(), LocalDnsService.Interface {
                 // config is already built by BaseService.Interface
                 "-c", (data.udpFallback ?: proxy).configFile!!.absolutePath)
         if (DataStore.tcpFastOpen) cmd += "--fast-open"
-        data.processes.start(cmd)
+        data.processes!!.start(cmd)
     }
 
     private fun startRedsocksDaemon() {
@@ -66,13 +66,13 @@ redsocks {
  type = socks5;
 }
 """)
-        data.processes.start(listOf(
+        data.processes!!.start(listOf(
                 File(applicationInfo.nativeLibraryDir, Executable.REDSOCKS).absolutePath, "-c", "redsocks.conf"))
     }
 
-    override fun startNativeProcesses() {
+    override suspend fun startProcesses() {
         startRedsocksDaemon()
-        super.startNativeProcesses()
+        super.startProcesses()
         if (data.proxy!!.profile.udpdns) startDNSTunnel()
     }
 
